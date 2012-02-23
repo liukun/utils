@@ -16,20 +16,19 @@ pid_file = sys.argv[1]
 process_name = sys.argv[2]
 
 if not os.path.isfile(pid_file):
-	print 'PASS.', pid_file, 'not found.'
-	sys.exit(0)
+    print 'PASS.', pid_file, 'not found.'
+    sys.exit(0)
 pid = None
 with open(pid_file) as f:
-	pid = int(f.read().strip())
+    pid = int(f.read().strip())
 
 # will use subprocess.check_output in Python 2.7
 # for now just follow http://stackoverflow.com/questions/4814970
-output = subprocess.Popen(['ps', '-p', str(pid), '-o command'], stdout=subprocess.PIPE).communicate()[0]
-output = output.split()
-assert output[0]=='COMMAND'
-if len(output) > 2 and process_name in output[1]:
-	print 'PASS.', process_name, 'found in ', output[1]
-	sys.exit(0)
+output = subprocess.Popen(['ps', '-p', str(pid), '-o', 'command'], stdout=subprocess.PIPE).communicate()[0]
+assert output.startswith('COMMAND')
+if process_name in output:
+    print 'PASS.', process_name, 'found.'
+    sys.exit(0)
 
 # the process is not running or not contains process_name
 os.unlink(pid_file)
