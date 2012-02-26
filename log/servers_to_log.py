@@ -9,10 +9,12 @@ Reference: http://www.saltycrane.com/blog/2010/03/how-list-attributes-ec2-instan
 from boto import ec2
 
 def get_list(region): # region in ec2.regions()
+    servers = []
     conn = ec2.connect_to_region(region)
+    if not conn:
+        return servers
     reservations = conn.get_all_instances()
     instances = [i for r in reservations for i in r.instances]
-    servers = []
     for i in instances:
         if 'log' in i.tags:
             servers.append(i.private_ip_address)
