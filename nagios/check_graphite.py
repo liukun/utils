@@ -35,9 +35,9 @@ from NagAconda import Plugin
 
 graphite = Plugin("Plugin to retrieve data from graphite", "1.0")
 graphite.add_option("u", "url", "URL to query for data", required=False)
-graphite.add_option("m", "min", "period of data to get", required=False)
-graphite.add_option("hM", "hostMafia", "host of Mafia server", required=False)
-graphite.add_option("kM", "keyMafia", "key string", required=False)
+graphite.add_option("m", "minute", "period of data to get", required=False)
+graphite.add_option("-hM", "hostMafia", "host of Mafia server", required=False)
+graphite.add_option("-kM", "keyMafia", "key string", required=False)
 
 graphite.enable_status("warning")
 graphite.enable_status("critical")
@@ -47,13 +47,13 @@ url = graphite.options.url
 if not url:
     url = ''.join([
         'http://localhost/render?format=raw',
-        '&from=-', graphite.options.min, 'minutes',
+        '&from=-', graphite.options.minute, 'minutes',
         '&target=servers.', graphite.options.hostMafia.replace('.', '_'),
             '_9400.', graphite.options.keyMafia,
         ])
 
 try:
-    usock = urllib2.urlopen(graphite.options.url)
+    usock = urllib2.urlopen(url)
     data = usock.read()
     usock.close()
     assert data
