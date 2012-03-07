@@ -11,7 +11,7 @@ def do_rsync_on_servers(region, log_type):
 
 def do_rsync(IP, log_type):
     subprocess.call(['rsync', '-ah', IP+'::'+log_type,
-        '/data/log-archiver/'+log_type+'/'+IP+'/'])
+        '/data/logger/'+log_type+'/'+IP+'/'])
 
 if __name__ == '__main__':
     do_rsync_on_servers(sys.argv[1], sys.argv[2])
