@@ -3,6 +3,9 @@
 """
 Nagios Plugin that reads data from graphite.
 
+Prerequisite:
+  easy_install nagaconda
+
 Orginal script from
 https://github.com/recoset/check_graphite/blob/master/check_graphite
 https://github.com/bitprophet/check_graphite/blob/master/check_graphite

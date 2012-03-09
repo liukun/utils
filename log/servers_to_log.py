@@ -21,5 +21,14 @@ def get_list(region): # region in ec2.regions()
     return servers
 
 if __name__ == '__main__':
-    print get_list('ap-northeast-1')
+    regions = {
+        '0': 'ap-northeast-1',
+        '1': 'us-east-1',
+        '2': 'ap-southeast-1',
+        }
+    import sys
+    region = sys.argv[1]
+    if region in regions:
+        region = regions[region]
+    print get_list(region)
 
