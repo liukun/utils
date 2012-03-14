@@ -8,9 +8,9 @@ Reference: http://www.saltycrane.com/blog/2010/03/how-list-attributes-ec2-instan
 
 from boto import ec2
 
-def get_list(region): # region in ec2.regions()
+def servers_with_tag_log(region=None): # region in ec2.regions()
     servers = []
-    conn = ec2.connect_to_region(region)
+    conn = ec2.connect_to_region(region or current_region())
     if not conn:
         return servers
     reservations = conn.get_all_instances()
@@ -19,6 +19,14 @@ def get_list(region): # region in ec2.regions()
         if 'log' in i.tags:
             servers.append(i.private_ip_address)
     return servers
+
+def current_region():
+    # http://stackoverflow.com/questions/4249488/find-region-from-within-ec2-instance
+    import json
+    import urllib2
+    query = urllib2.urlopen('http://169.254.169.254/latest/dynamic/instance-identity/document')
+    doc = json.loads(query.read())
+    return doc['region']
 
 if __name__ == '__main__':
     regions = {
@@ -30,5 +38,5 @@ if __name__ == '__main__':
     region = sys.argv[1]
     if region in regions:
         region = regions[region]
-    print get_list(region)
+    print servers_with_tag_log(region)
 

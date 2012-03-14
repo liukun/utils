@@ -5,8 +5,8 @@ import sys
 
 import servers_to_log
 
-def do_rsync_on_servers(region, log_type):
-    for IP in servers_to_log.get_list(region):
+def do_rsync_on_servers(log_type):
+    for IP in servers_to_log.servers_with_tag_log():
         do_rsync(IP, log_type)
 
 def do_rsync(IP, log_type):
@@ -14,4 +14,4 @@ def do_rsync(IP, log_type):
         '/data/logger/'+log_type+'/'+IP+'/'])
 
 if __name__ == '__main__':
-    do_rsync_on_servers(sys.argv[1], sys.argv[2])
+    do_rsync_on_servers(sys.argv[1])
