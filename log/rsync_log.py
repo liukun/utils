@@ -29,7 +29,6 @@ def do_compress(log_type):
             ip = dirs.pop()
             if ip == compressed_dir: continue
             for sub, subdirs, files in os.walk(os.path.join(root_path, ip)):
-                print ip
                 for f in files:
                     source = os.path.join(sub, f)
                     target = os.path.join(compressed_path, _compressed_name(f, ip))
