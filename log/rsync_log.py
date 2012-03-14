@@ -22,7 +22,8 @@ def do_rsync(IP, log_type):
 def do_compress(log_type):
     root_path = os.path.join(data_path, log_type)
     compressed_path = os.path.join(root_path, compressed_dir)
-    os.makedirs(compressed_path)
+    if not os.path.isdir(compressed_path):
+        os.makedirs(compressed_path)
     for root, dirs, files in os.walk(root_path):
         while dirs:
             ip = dirs.pop()
