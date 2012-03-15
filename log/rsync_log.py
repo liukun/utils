@@ -42,7 +42,9 @@ def do_compress(log_type):
             for sub, subdirs, files in os.walk(os.path.join(root_path, ip)):
                 for f in files:
                     source = os.path.join(sub, f)
-                    target = os.path.join(compressed_path, _compressed_name(f, ip))
+                    target = _compressed_name(f, ip)
+                    if target is None: continue
+                    target = os.path.join(compressed_path, target)
                     _bzip2(source, target)
 
 def _compressed_name(origin_file_name, ip):
@@ -50,7 +52,10 @@ def _compressed_name(origin_file_name, ip):
     if aws_current_region is None:
         aws_current_region = servers_to_log.current_region()
     parts = origin_file_name.split('.')
-    assert parts[1].startswith('20') # should be 2012, 2013, ...
+    date = parts[1]
+    if date == 'today':
+        return None
+    assert date.startswith('20') # should be 2012, 2013, ...
     ip = 'ip-' + ip.replace('.', '-')
     return '.'.join([parts[0], parts[1], aws_current_region, ip, 'log', 'bz2'])
 
