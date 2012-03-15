@@ -4,6 +4,15 @@ import os
 import re
 import sys
 
+# assure one instance
+this_file = sys.argv[0]
+sys.path.append(os.path.join(os.path.dirname(this_file), '..'))
+pid_file = __import__('pid_file')
+del sys.path[-1]
+lock = pid_file.pid_file(this_file+'.pid').acquire()
+assert lock
+
+# print debug info
 DEBUG = len(sys.argv) > 1 and sys.argv[1] == 'debug'
 
 prefix = '/backup/tower_log_csv/tower.'
