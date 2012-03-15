@@ -75,8 +75,9 @@ def _bzip2(source_file, target_file):
     os.rename(tmp_file, target_file)
 
 if __name__ == '__main__':
-    pid_file = import_module('../pid_file')
-    lock = pid_file.pid_file(sys.argv[0]+'.pid').acquire()
+    this_file = sys.argv[0]
+    pid_file = import_module(os.path.join(os.path.dirname(this_file), '../pid_file'))
+    lock = pid_file.pid_file(this_file+'.pid').acquire()
     assert lock
     log_type = sys.argv[1]
     do_compress(log_type)
