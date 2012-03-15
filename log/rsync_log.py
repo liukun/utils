@@ -11,6 +11,17 @@ compressed_dir = 'compressed'
 
 aws_current_region = None
 
+def import_module(module_path_name):
+    """ 
+    http://stackoverflow.com/questions/72852/how-to-do-relative-imports-in-python
+    """
+    path, module_name = os.path.split(module_path_name)
+    sys.path.append(path)
+    module = __import__(module_name)
+    reload(module) # Might be out of date
+    del sys.path[-1]
+    return module
+
 def do_rsync_on_servers(log_type):
     for IP in servers_to_log.servers_with_tag_log():
         do_rsync(IP, log_type)
@@ -59,6 +70,9 @@ def _bzip2(source_file, target_file):
     os.rename(tmp_file, target_file)
 
 if __name__ == '__main__':
+    pid_file = import_module('../pid_file')
+    lock = pid_file.pid_file(sys.argv[0]+'.pid').acquire()
+    assert lock
     log_type = sys.argv[1]
     do_compress(log_type)
     do_rsync_on_servers(log_type)
