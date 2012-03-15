@@ -16,7 +16,7 @@ def do_rsync_on_servers(log_type):
         do_rsync(IP, log_type)
 
 def do_rsync(IP, log_type):
-    subprocess.call(['rsync', '-ah', IP+'::'+log_type,
+    subprocess.call(['rsync', '-ah', '--delete', IP+'::'+log_type,
         os.path.join(data_path, log_type, IP+os.path.sep)])
 
 def do_compress(log_type):
@@ -62,3 +62,4 @@ if __name__ == '__main__':
     log_type = sys.argv[1]
     do_compress(log_type)
     do_rsync_on_servers(log_type)
+    do_compress(log_type)
