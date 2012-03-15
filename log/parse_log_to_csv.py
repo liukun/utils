@@ -2,6 +2,9 @@ import bz2
 import csv
 import os
 import re
+import sys
+
+DEBUG = len(sys.argv) > 1 and sys.argv[1] == 'debug'
 
 prefix = '/backup/tower_log_csv/tower.'
 log_path = '/backup/tower_log_backup/'
@@ -32,6 +35,8 @@ class Parser:
         name = prefix + '.'.join([self.cate, date, region, 'csv'])
         self.close()
         if os.path.isfile(name):
+            if DEBUG:
+                print ' skip', name
             return
         self.csv_name = name
         self.csv_file = open(name+'.tmp', 'wb');
@@ -96,6 +101,7 @@ for root, dirs, files in os.walk(log_path):
     files.sort()
     for name in files:
         parts = name.split('.')
+        if parts[-1] != 'bz2': continue
         need = False
         if parts[1] != date or parts[2] != region:
             date = parts[1]
