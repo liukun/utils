@@ -120,7 +120,7 @@ class Daily(Parser):
         v = self._value_of(self.pt_buyBuxScratchCard, line)
         if v: res['buyBux'] = res.get('buyBux', 0) + 1
 
-    def _value_of(self.p, line):
+    def _value_of(self, p, line):
         res = p.search(line)
         if not res: return None
         return res.groupdict()['value']
