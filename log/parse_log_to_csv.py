@@ -30,13 +30,13 @@ class Parser:
     csv_file = None
     csv_name = None
 
-    def parse(self, string):
+    def parse(self, line):
         if self.csv is None: return
-        if not self.req in string: return
-        res = self.pattern.match(string)
-        if res: self.deal_data(res.groupdict())
+        if not self.req in line: return
+        res = self.pattern.match(line)
+        if res: self.deal_data(res.groupdict(), line)
 
-    def deal_data(self, res):
+    def deal_data(self, res, line):
         raise NotImplementedError()
 
     def new_csv(self, date, region):
@@ -70,23 +70,57 @@ class SignUp(Parser):
     cate = 'SignUp'
     req = 'cate:SignUp sub:done'
 
-    def deal_data(self, res):
+    def deal_data(self, res, line):
         player = res['player']
         date = res['date']
         self.csv.writerow([player, date])
         family.insert(player, {'SignUp': date})
 
-class FloorCount(Parser):
-    cate = 'FloorCount'
-    req = 'floorCount:'
-    pattern = re.compile("(?P<date>.*?)\s\[INFO\].*ACTIVITY\splayer:(?P<player>[0-9]+?)\s.*id:(?P=player)[,\]].*floorCount:(?P<floor>[0-9]+?)[,\]]")
+class IAP(Parser):
+    cate = 'IAP'
+    req = 'cate:InAppPurchase sub:correct'
+    pattern = re.compile('(?P<date>.*?)\s\[INFO\].*ACTIVITY\splayer:(?P<player>[0-9]+?)\s.*cate:InAppPurchase sub:correct.*"diamond",(?P<value>[0-9]+?),')
+
+    def deal_data(self, res, line):
+        self.csv.writerow([res['date'], res['player'], res['value']])
+
+class ScratchCardReward(Parser):
+    cate = 'ScratchCardReward'
+    req = 'sub:scratchCard'
+    pattern = re.compile('(?P<date>.*?)\s\[INFO\].*ACTIVITY\splayer:(?P<player>[0-9]+?)\s.*cate:Change(?P<type>.*) sub:scratchCard.*"delta","(?P<value>[0-9]+?)",')
+
+    def deal_data(self, res, line):
+        self.csv.writerow([res['date'], res['player'], res['type'], res['value']])
+
+class Daily(Parser):
+    cate = 'Daily'
+    req = 'ACTIVITY'
+#    pattern = re.compile("(?P<date>.*?)\s\[INFO\].*ACTIVITY\splayer:(?P<player>[0-9]+?)\s.*id:(?P=player)[,\]].*floorCount:(?P<floor>[0-9]+?)[,\]]")
+    pt_floor = re.compile('floorCount:(?P<value>[0-9]+?)[,\]]')
+    pt_buyDiaScratchCard = re.compile('cate:ChangeDiamond sub:buyDiamondsScratchCards.*(?P<value>delta)')
+    pt_buyBuxScratchCard = re.compile('cate:ChangeDiamond sub:sub:buyGoldsScratchCards.*(?P<value>delta)')
 
     def prepare_data(self):
         self.data = {}
 
-    def deal_data(self, res):
-        player = res.pop('player')
-        self.data[player] = res
+    def deal_data(self, res, line):
+        player = res['player']
+        res = self.data.setdefault(player, {})
+        v = _value_of(pt_floor, line)
+        if v:
+            s = res.get('floor', 0)
+            v = int(v)
+            if v > s
+                res['floor'] = v
+        v = _value_of(pt_buyDiaScratchCard, line)
+        if v: res['buyDia'] = res.get('buyDia', 0) + 1
+        v = _value_of(pt_buyBuxScratchCard, line)
+        if v: res['buyBux'] = res.get('buyBux', 0) + 1
+
+    def _value_of(p, line):
+        res = p.search(line)
+        if not res: return None
+        return res.groupdict()['value']
 
     def clear_data(self):
         if not getattr(self, 'data', None): return
@@ -101,7 +135,7 @@ class FloorCount(Parser):
             self.csv.writerow([player, res['floor'], res['date'], sign_up])
         self.data.clear()
 
-parsers = [SignUp(), FloorCount()]
+parsers = [SignUp(), IAP(), ScratchCardReward(), Daily()]
 
 for root, dirs, files in os.walk(log_path):
     while dirs: dirs.pop()
