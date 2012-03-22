@@ -99,6 +99,7 @@ class Daily(Parser):
     pt_floor = re.compile('floorCount:(?P<value>[0-9]+?)[,\]]')
     pt_buyDiaScratchCard = re.compile('cate:ChangeDiamond sub:buyDiamondsScratchCards.*(?P<value>delta)')
     pt_buyBuxScratchCard = re.compile('cate:ChangeDiamond sub:buyGoldsScratchCards.*(?P<value>delta)')
+    pt_satScratchCard = 'cate:scratchCard sub:sat'
 
     def prepare_data(self):
         self.data = {}
@@ -119,6 +120,8 @@ class Daily(Parser):
         if v: res['buyDia'] = res.get('buyDia', 0) + 1
         v = self._value_of(self.pt_buyBuxScratchCard, line)
         if v: res['buyBux'] = res.get('buyBux', 0) + 1
+        if pt_satScratchCard in line:
+            res['satCard'] = res.get('satCard', 0) + 1
 
     def _value_of(self, p, line):
         res = p.search(line)
@@ -127,7 +130,7 @@ class Daily(Parser):
 
     def clear_data(self):
         if not getattr(self, 'data', None): return
-        self.csv.writerow(['id', 'last_time', 'floor', 'buyDiamondScratchCards', 'buyBuxScratchCards'])
+        self.csv.writerow(['id', 'last_time', 'floor', 'buyDiamondScratchCards', 'buyBuxScratchCards', 'satisScratchCards', 'sign_up_time'])
         for player in self.data:
             res = self.data[player]
             sign_up = ''
@@ -136,7 +139,7 @@ class Daily(Parser):
                 sign_up = family.get(player, [key])[key]
             except pycassa.NotFoundException, e:
                 pass
-            self.csv.writerow([player, res['last'], res.get('floor', 0), res.get('buyDia', 0), res.get('buyBux', 0), sign_up])
+            self.csv.writerow([player, res['last'], res.get('floor', 0), res.get('buyDia', 0), res.get('buyBux', 0), res.get('satCard', 0), sign_up])
         self.data.clear()
 
 parsers = [SignUp(), IAP(), ScratchCardReward(), Daily()]
