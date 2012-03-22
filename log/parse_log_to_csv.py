@@ -98,7 +98,7 @@ class Daily(Parser):
 #    pattern = re.compile("(?P<date>.*?)\s\[INFO\].*ACTIVITY\splayer:(?P<player>[0-9]+?)\s.*id:(?P=player)[,\]].*floorCount:(?P<floor>[0-9]+?)[,\]]")
     pt_floor = re.compile('floorCount:(?P<value>[0-9]+?)[,\]]')
     pt_buyDiaScratchCard = re.compile('cate:ChangeDiamond sub:buyDiamondsScratchCards.*(?P<value>delta)')
-    pt_buyBuxScratchCard = re.compile('cate:ChangeDiamond sub:sub:buyGoldsScratchCards.*(?P<value>delta)')
+    pt_buyBuxScratchCard = re.compile('cate:ChangeDiamond sub:buyGoldsScratchCards.*(?P<value>delta)')
 
     def prepare_data(self):
         self.data = {}
