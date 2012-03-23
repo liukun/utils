@@ -99,7 +99,7 @@ class Daily(Parser):
     pt_floor = re.compile('floorCount:(?P<value>[0-9]+?)[,\]]')
     pt_buyDiaScratchCard = re.compile('cate:ChangeDiamond sub:buyDiamondsScratchCards.*(?P<value>delta)')
     pt_buyBuxScratchCard = re.compile('cate:ChangeDiamond sub:buyGoldsScratchCards.*(?P<value>delta)')
-    pt_satScratchCard = 'cate:scratchCard sub:sat'
+    pt_satScratchCard = 'cate:ScratchCard sub:sat'
 
     def prepare_data(self):
         self.data = {}
@@ -120,7 +120,7 @@ class Daily(Parser):
         if v: res['buyDia'] = res.get('buyDia', 0) + 1
         v = self._value_of(self.pt_buyBuxScratchCard, line)
         if v: res['buyBux'] = res.get('buyBux', 0) + 1
-        if pt_satScratchCard in line:
+        if self.pt_satScratchCard in line:
             res['satCard'] = res.get('satCard', 0) + 1
 
     def _value_of(self, p, line):
