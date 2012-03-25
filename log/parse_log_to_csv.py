@@ -17,10 +17,14 @@ DEBUG = len(sys.argv) > 1 and sys.argv[1] == 'debug'
 
 prefix = '/backup/tower_log_csv/tower.'
 log_path = '/backup/tower_log_backup/'
+if DEBUG:
+    prefix = 'out.'
+    log_path = './'
 
-import pycassa
-pool = pycassa.ConnectionPool('TowerSpace')
-family = pycassa.ColumnFamily(pool, 'Log')
+if not DEBUG:
+    import pycassa
+    pool = pycassa.ConnectionPool('TowerSpace')
+    family = pycassa.ColumnFamily(pool, 'Log')
 
 class Parser:
     cate = ''
@@ -74,7 +78,8 @@ class SignUp(Parser):
         player = res['player']
         date = res['date']
         self.csv.writerow([player, date])
-        family.insert(player, {'SignUp': date})
+        if not DEBUG:
+            family.insert(player, {'SignUp': date})
 
 class IAP(Parser):
     cate = 'IAP'
@@ -97,9 +102,15 @@ class Daily(Parser):
     req = 'ACTIVITY'
 #    pattern = re.compile("(?P<date>.*?)\s\[INFO\].*ACTIVITY\splayer:(?P<player>[0-9]+?)\s.*id:(?P=player)[,\]].*floorCount:(?P<floor>[0-9]+?)[,\]]")
     pt_floor = re.compile('floorCount:(?P<value>[0-9]+?)[,\]]')
-    pt_buyDiaScratchCard = re.compile('cate:ChangeDiamond sub:buyDiamondsScratchCards.*(?P<value>delta)')
-    pt_buyBuxScratchCard = re.compile('cate:ChangeDiamond sub:buyGoldsScratchCards.*(?P<value>delta)')
     pt_satScratchCard = 'cate:ScratchCard sub:sat'
+    pt_delta = re.compile('cate:(?P<cate>\w+) sub:(?P<sub>\w+) json:\["delta","(?P<delta>-?\d+)",')
+    categories = {
+        'ChangeDiamond': [
+            'buyDiamondsScratchCards', 'buyGoldsScratchCards',
+            'restockSpeedUp', 'sellSpeedUp', 'buyGangster',
+            'buyEquip', 'upgradeElevator', 'constructSpeedUp',
+            ],
+        }
 
     def prepare_data(self):
         self.data = {}
@@ -116,12 +127,16 @@ class Daily(Parser):
             v = int(v)
             if v > s:
                 res['floor'] = v
-        v = self._value_of(self.pt_buyDiaScratchCard, line)
-        if v: res['buyDia'] = res.get('buyDia', 0) + 1
-        v = self._value_of(self.pt_buyBuxScratchCard, line)
-        if v: res['buyBux'] = res.get('buyBux', 0) + 1
         if self.pt_satScratchCard in line:
             res['satCard'] = res.get('satCard', 0) + 1
+        delta_info = self.pt_delta.search(line)
+        if delta_info:
+            delta_info = delta_info.groupdict()
+            key = ':'.join([delta_info['cate'], delta_info['sub']])
+            res[key] = res.get(key, 0) + 1
+            delta = int(delta_info['delta'])
+            key = delta_info['cate'] + ('Plus' if delta > 0 else 'Neg')
+            res[key] = res.get(key, 0) + delta
 
     def _value_of(self, p, line):
         res = p.search(line)
@@ -130,16 +145,28 @@ class Daily(Parser):
 
     def clear_data(self):
         if not getattr(self, 'data', None): return
-        self.csv.writerow(['id', 'last_time', 'floor', 'buyDiamondScratchCards', 'buyBuxScratchCards', 'satisScratchCards', 'sign_up_time'])
+        row = ['id', 'last_time', 'sign_up_time']
+        keys = ['floor', 'satCard', 'ChangeBuxPlus', 'ChangeBuxNeg',
+            'ChangeDiamondPlus', 'ChangeDiamondNeg',
+            ]
+        for c in self.categories:
+            for k in self.categories[c]:
+                keys.append(c + ':' + k)
+        self.csv.writerow(row+keys)
         for player in self.data:
             res = self.data[player]
             sign_up = ''
             try:
                 key = 'SignUp'
-                sign_up = family.get(player, [key])[key]
+                if not DEBUG:
+                    global family
+                    sign_up = family.get(player, [key])[key]
             except pycassa.NotFoundException, e:
                 pass
-            self.csv.writerow([player, res['last'], res.get('floor', 0), res.get('buyDia', 0), res.get('buyBux', 0), res.get('satCard', 0), sign_up])
+            row = [player, res['last'], sign_up]
+            for k in keys:
+                row.append(res.get(k, 0))
+            self.csv.writerow(row)
         self.data.clear()
 
 parsers = [SignUp(), IAP(), ScratchCardReward(), Daily()]
@@ -166,6 +193,7 @@ for root, dirs, files in os.walk(log_path):
                     need = True
                     break
         if not need: continue
+        if DEBUG: print ' processing', name
         f = bz2.BZ2File(os.path.join(root, name))
         for line in f:
             for parser in parsers:
