@@ -100,8 +100,7 @@ class ScratchCardReward(Parser):
 class Daily(Parser):
     cate = 'Daily'
     req = 'ACTIVITY'
-#    pattern = re.compile("(?P<date>.*?)\s\[INFO\].*ACTIVITY\splayer:(?P<player>[0-9]+?)\s.*id:(?P=player)[,\]].*floorCount:(?P<floor>[0-9]+?)[,\]]")
-    pt_floor = re.compile('floorCount:(?P<value>[0-9]+?)[,\]]')
+    pt_SimplePlayerInfo = re.compile('SimplePlayerInfo\(.* bux:(?P<bux>\d+), floorCount:(?P<floor>\d+), diamond:(?P<diamond>\d+)')
     pt_satScratchCard = 'cate:ScratchCard sub:sat'
     pt_delta = re.compile('cate:(?P<cate>\w+) sub:(?P<sub>\w+) json:\["delta","(?P<delta>-?\d+)",')
     categories = {
@@ -121,12 +120,13 @@ class Daily(Parser):
         res = self.data.setdefault(player, {})
         if 'last' not in res or res['last'] < last:
             res['last'] = last
-        v = self._value_of(self.pt_floor, line)
-        if v:
-            s = res.get('floor', 0)
-            v = int(v)
-            if v > s:
-                res['floor'] = v
+        if last > res.get('last_player_info', ''):
+            player_info = self.pt_SimplePlayerInfo.search(line)
+            if player_info:
+                player_info = player_info.groupdict()
+                res['last_player_info'] = last
+                for key in ('floor', 'bux', 'diamond'):
+                    res[key] = player_info[key]
         if self.pt_satScratchCard in line:
             res['satCard'] = res.get('satCard', 0) + 1
         delta_info = self.pt_delta.search(line)
@@ -138,17 +138,12 @@ class Daily(Parser):
             key = delta_info['cate'] + ('Plus' if delta > 0 else 'Neg')
             res[key] = res.get(key, 0) + delta
 
-    def _value_of(self, p, line):
-        res = p.search(line)
-        if not res: return None
-        return res.groupdict()['value']
-
     def clear_data(self):
         if not getattr(self, 'data', None): return
         row = ['id', 'last_time', 'sign_up_time']
-        keys = ['floor', 'satCard', 'ChangeBuxPlus', 'ChangeBuxNeg',
-            'ChangeDiamondPlus', 'ChangeDiamondNeg',
-            ]
+        keys = ['floor', 'satCard', 'bux', 'ChangeBuxPlus', 'ChangeBuxNeg',
+                'diamond', 'ChangeDiamondPlus', 'ChangeDiamondNeg',
+                ]
         for c in self.categories:
             for k in self.categories[c]:
                 keys.append(c + ':' + k)
