@@ -104,7 +104,9 @@ class IAP(Parser):
     pattern = re.compile('(?P<date>.*?)\s\[INFO\].*ACTIVITY\splayer:(?P<player>[0-9]+?)\s.*cate:InAppPurchase sub:correct.*"diamond",(?P<value>[0-9]+?),')
 
     def deal_data(self, res, line):
-        self.csv.writerow([res['date'], res['player'], res['value']])
+        date = res['date']
+        player = res['player']
+        self.csv.writerow([date, player, res['value']])
         cassa_insert_if_not_exists(self.region, player, 'FirstIAP', date)
 
 class ScratchCardReward(Parser):
