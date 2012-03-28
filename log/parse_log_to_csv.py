@@ -26,6 +26,18 @@ if not DEBUG:
     import pycassa
     pool = pycassa.ConnectionPool('TowerSpace')
     family = pycassa.ColumnFamily(pool, 'Log')
+def cassa_insert_if_not_exists(region, key, column, value):
+    if DEBUG: return
+    key = region + key
+    if family.get_count(key, columns=[column]): return
+    family.insert(key, {column: value})
+def cassa_get(region, key, column, default):
+    if DEBUG: return default
+    key = region + key
+    try:
+        return family.get(key, [column])[column]
+    except pycassa.NotFoundException, e:
+        return default
 
 class Parser:
     cate = ''
@@ -59,6 +71,7 @@ class Parser:
         self.csv_name = name
         self.csv_file = open(name+'.tmp', 'wb');
         self.csv = csv.writer(self.csv_file, dialect='excel')
+        self.region = region
         self.prepare_data()
 
     def prepare_data(self):
@@ -83,8 +96,7 @@ class SignUp(Parser):
         player = res['player']
         date = res['date']
         self.csv.writerow([player, date])
-        if not DEBUG:
-            family.insert(player, {'SignUp': date})
+        cassa_insert_if_not_exists(self.region, player, 'SignUp', date)
 
 class IAP(Parser):
     cate = 'IAP'
@@ -93,6 +105,7 @@ class IAP(Parser):
 
     def deal_data(self, res, line):
         self.csv.writerow([res['date'], res['player'], res['value']])
+        cassa_insert_if_not_exists(self.region, player, 'FirstIAP', date)
 
 class ScratchCardReward(Parser):
     cate = 'ScratchCardReward'
@@ -155,14 +168,7 @@ class Daily(Parser):
         self.csv.writerow(row+keys)
         for player in self.data:
             res = self.data[player]
-            sign_up = ''
-            try:
-                key = 'SignUp'
-                if not DEBUG:
-                    global family
-                    sign_up = family.get(player, [key])[key]
-            except pycassa.NotFoundException, e:
-                pass
+            sign_up = cassa_get(self.region, player, 'SignUp', '')
             row = [player, res['last'], sign_up]
             for k in keys:
                 row.append(res.get(k, 0))
