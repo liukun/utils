@@ -3,6 +3,7 @@ import csv
 import os
 import re
 import sys
+from operator import itemgetter
 
 # assure one instance
 this_file = sys.argv[0]
@@ -170,34 +171,62 @@ class Daily(Parser):
 
 parsers = [SignUp(), IAP(), ScratchCardReward(), Daily()]
 
+last_date = None
+last_region = None
+batch = []
+def batch_process(files, date, region):
+    '''batch process one day's data'''
+    if not files: return
+    if not date or not region:
+        print ' skipped', files
+        del files[:]
+        return
+    if len(files) < 2: return
+    need = False
+    for parser in parsers:
+        parser.new_csv(date, region)
+        if parser.csv:
+            need = True
+    if not need: return
+    if DEBUG: print ' processing', files
+    opens = []
+    for f in files:
+        opens.append(bz2.BZ2File(os.path.join(root, f)))
+    lines = []
+    for f in opens:
+        try:
+            lines.append(f.next())
+        except StopIteration:
+            pass
+    while lines:
+        # find most early line of log
+        index, line = min(enumerate(lines), key=itemgetter(1))
+        for parser in parsers:
+            parser.parse(line)
+        try:
+            next = opens[index].next()
+            lines[index] = next
+        except StopIteration:
+            del lines[index]
+            opens[index].close()
+            del opens[index]
+    for parser in parsers:
+        parser.close()
+    del files[:]
+
 for root, dirs, files in os.walk(log_path):
     while dirs: dirs.pop()
     region = None
     date = None
     files.sort()
-    for name in files:
-        parts = name.split('.')
+    while files:
+        f = files.pop(0)
+        # f == 'activity.2012-03-26.us-east-1.ip-10-212-178-114.log.bz2'
+        parts = f.split('.')
         if parts[-1] != 'bz2': continue
-        need = False
-        if parts[1] != date or parts[2] != region:
-            date = parts[1]
-            region = parts[2]
-            for parser in parsers:
-                parser.new_csv(date, region)
-                if parser.csv:
-                    need = True
-        else:
-            for parser in parsers:
-                if parser.csv:
-                    need = True
-                    break
-        if not need: continue
-        if DEBUG: print ' processing', name
-        f = bz2.BZ2File(os.path.join(root, name))
-        for line in f:
-            for parser in parsers:
-                parser.parse(line)
-        f.close()
-
-for parser in parsers:
-    parser.close()
+        if (last_date != parts[1] or last_region != parts[2]):
+            batch_process(batch, last_date, last_region)
+            last_date = parts[1]
+            last_region = parts[2]
+        batch.append(f)
+    batch_process(batch, last_date, last_region)
