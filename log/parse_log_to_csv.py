@@ -38,7 +38,11 @@ class Parser:
         if self.csv is None: return
         if not self.req in line: return
         res = self.pattern.match(line)
-        if res: self.deal_data(res.groupdict(), line)
+        if res:
+            res = res.groupdict()
+            # SignIn/recv SignUp/recv do not have correct ID
+            if int(res['player']) > 0:
+                self.deal_data(res, line)
 
     def deal_data(self, res, line):
         raise NotImplementedError()
