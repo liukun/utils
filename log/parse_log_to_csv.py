@@ -18,9 +18,9 @@ DEBUG = len(sys.argv) > 1 and sys.argv[1] == 'debug'
 
 prefix = '/backup/tower_log_csv/tower.'
 log_path = '/backup/tower_log_backup/'
-if DEBUG:
-    prefix = 'out.'
-    log_path = './'
+# if DEBUG:
+#     prefix = 'out.'
+#     log_path = './'
 
 if not DEBUG:
     import pycassa
@@ -124,7 +124,7 @@ class FirstPurchaseAfterIAP(Parser):
         if self.pt_purchase in line:
             self.data.add(player)
         elif self.pt_change in line and player in self.data:
-            res = pt_minus.search(line)
+            res = self.pt_minus.search(line)
             if not res: return
             res = res.groupdict()
             self.csv.writerow([date, player, res['sub'], res['delta']])
