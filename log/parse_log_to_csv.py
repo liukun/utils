@@ -198,7 +198,8 @@ class Daily(Parser):
             self.csv.writerow(row)
         self.data.clear()
 
-parsers = [SignUp(), IAP(), ScratchCardReward(), Daily()]
+parsers = [SignUp(), IAP(), FirstPurchaseAfterIAP(),
+    ScratchCardReward(), Daily()]
 
 def batch_process(files, date, region):
     '''batch process one day's data'''
