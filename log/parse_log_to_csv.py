@@ -109,6 +109,27 @@ class IAP(Parser):
         self.csv.writerow([date, player, res['value']])
         cassa_insert_if_not_exists(self.region, player, 'FirstIAP', date)
 
+class FirstPurchaseAfterIAP(Parser):
+    cate = 'FirstPurchaseAfterIAP'
+    pt_purchase = 'cate:InAppPurchase sub:correct'
+    pt_change = 'cate:ChangeDiamond'
+    pt_minus = re.compile('sub:(?P<sub>\w+) json:\["delta","(?P<delta>-\d+)",')
+
+    def prepare_data(self):
+        self.data = set()
+
+    def deal_data(self, res, line):
+        date = res['date']
+        player = res['player']
+        if self.pt_purchase in line:
+            self.data.add(player)
+        elif self.pt_change in line and player in self.data:
+            res = pt_minus.search(line)
+            if not res: return
+            res = res.groupdict()
+            self.csv.writerow([date, player, res['sub'], res['delta']])
+            self.data.remove(player)
+
 class ScratchCardReward(Parser):
     cate = 'ScratchCardReward'
     req = 'sub:scratchCard'
