@@ -200,23 +200,25 @@ class Daily(Parser):
 
 parsers = [SignUp(), IAP(), ScratchCardReward(), Daily()]
 
-last_date = None
-last_region = None
-batch = []
 def batch_process(files, date, region):
     '''batch process one day's data'''
     if not files: return
-    if not date or not region:
-        print ' skipped', files
+    try:
+        if not date or not region:
+            print ' skipped', files
+            return
+        need = False
+        for parser in parsers:
+            parser.new_csv(date, region)
+            if parser.csv:
+                need = True
+        if not need:
+            return
+        _batch_process(files, date, region)
+    finally:
         del files[:]
-        return
-    if len(files) < 2: return
-    need = False
-    for parser in parsers:
-        parser.new_csv(date, region)
-        if parser.csv:
-            need = True
-    if not need: return
+
+def _batch_process(files, date, region):
     if DEBUG: print ' processing', files
     opens = []
     for f in files:
@@ -241,10 +243,12 @@ def batch_process(files, date, region):
             del opens[index]
     for parser in parsers:
         parser.close()
-    del files[:]
 
 for root, dirs, files in os.walk(log_path):
     while dirs: dirs.pop()
+    last_date = None
+    last_region = None
+    batch = []
     region = None
     date = None
     files.sort()
