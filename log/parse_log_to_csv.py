@@ -1,5 +1,6 @@
 import bz2
 import csv
+import datetime
 import os
 import re
 import sys
@@ -137,6 +138,39 @@ class ScratchCardReward(Parser):
 
     def deal_data(self, res, line):
         self.csv.writerow([res['date'], res['player'], res['type'], res['value']])
+
+class Session(Parser):
+    cate = 'Session'
+    req = 'cate:Sign'
+    pattern = re.compile('(?P<date>.*?)\s\[INFO\].*ACTIVITY\splayer:(?P<player>\d+?) .* session:(?P<session>\d+) .* cate:Sign(?P<method>\w+) ",')
+
+    def prepare_data(self):
+        self.cache = {}
+        self.data = {}
+
+    def deal_data(self, res, line):
+        player = res['player']
+        date = res['date']
+        method = res['method']
+        if method == 'In':
+            self.cache[player] = res
+        elif method == 'Out':
+            last = self.cache.get(player, None)
+            if not last: return
+            old_date = datetime.strptime(last['date'], '%Y-%m-%d %H:%M:%S,%f')
+            new_date = datetime.strptime(date, '%Y-%m-%d %H:%M:%S,%f')
+            delta = new_date - old_date
+            delta = delta.days * 86400 + delta.seconds
+            if delta > 0:
+                data = self.data.setdefault(player, {})
+                data['times'] = data.get('times', 0) + 1
+                data['seconds'] = data.get('seconds', 0) + delta
+
+    def clear_data(self):
+        for player in self.data:
+            data = self.data[player]
+            self.csv.writerow([player, data['times'], data['seconds']])
+        self.data.clear()
 
 class Daily(Parser):
     cate = 'Daily'
