@@ -142,7 +142,7 @@ class ScratchCardReward(Parser):
 class Session(Parser):
     cate = 'Session'
     req = 'cate:Sign'
-    pattern = re.compile('(?P<date>.*?)\s\[INFO\].*ACTIVITY\splayer:(?P<player>\d+?) .* session:(?P<session>\d+) .* cate:Sign(?P<method>\w+) ",')
+    pattern = re.compile('(?P<date>.*?)\s\[INFO\].*ACTIVITY\splayer:(?P<player>\d+?) .* session:(?P<session>\d+) .* cate:Sign(?P<method>\w+) ')
 
     def prepare_data(self):
         self.cache = {}
@@ -157,8 +157,8 @@ class Session(Parser):
         elif method == 'Out':
             last = self.cache.get(player, None)
             if not last: return
-            old_date = datetime.strptime(last['date'], '%Y-%m-%d %H:%M:%S,%f')
-            new_date = datetime.strptime(date, '%Y-%m-%d %H:%M:%S,%f')
+            old_date = datetime.datetime.strptime(last['date'], '%Y-%m-%d %H:%M:%S,%f')
+            new_date = datetime.datetime.strptime(date, '%Y-%m-%d %H:%M:%S,%f')
             delta = new_date - old_date
             delta = delta.days * 86400 + delta.seconds
             if delta > 0:
@@ -233,7 +233,7 @@ class Daily(Parser):
         self.data.clear()
 
 parsers = [SignUp(), IAP(), FirstPurchaseAfterIAP(),
-    ScratchCardReward(), Daily()]
+    ScratchCardReward(), Session(), Daily()]
 
 def batch_process(files, date, region):
     '''batch process one day's data'''
