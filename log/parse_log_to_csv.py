@@ -175,7 +175,7 @@ class Session(Parser):
 class Daily(Parser):
     cate = 'Daily'
     req = 'ACTIVITY'
-    pt_SimplePlayerInfo = re.compile('SimplePlayerInfo\(.* bux:(?P<bux>\d+), floorCount:(?P<floor>\d+), diamond:(?P<diamond>\d+)')
+    pt_SimplePlayerInfo = re.compile('SimplePlayerInfo\(.* bux:(?P<bux>\d+), floorCount:(?P<floor>\d+), diamond:(?P<diamond>\d+), dreamCount:(?P<dream>\d+)')
     pt_satScratchCard = 'cate:ScratchCard sub:sat'
     pt_delta = re.compile('cate:(?P<cate>\w+) sub:(?P<sub>\w+) json:\["delta","(?P<delta>-?\d+)",')
     categories = {
@@ -200,7 +200,7 @@ class Daily(Parser):
             if player_info:
                 player_info = player_info.groupdict()
                 res['last_player_info'] = last
-                for key in ('floor', 'bux', 'diamond'):
+                for key in ('floor', 'bux', 'diamond', 'dream'):
                     res[key] = player_info[key]
         if self.pt_satScratchCard in line:
             res['satCard'] = res.get('satCard', 0) + 1
@@ -217,7 +217,7 @@ class Daily(Parser):
         if not getattr(self, 'data', None): return
         row = ['id', 'last_time', 'sign_up_time']
         keys = ['floor', 'satCard', 'bux', 'ChangeBuxPlus', 'ChangeBuxNeg',
-                'diamond', 'ChangeDiamondPlus', 'ChangeDiamondNeg',
+                'diamond', 'ChangeDiamondPlus', 'ChangeDiamondNeg', 'dream',
                 ]
         for c in self.categories:
             for k in self.categories[c]:
