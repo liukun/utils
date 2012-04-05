@@ -223,9 +223,9 @@ class Daily(Parser):
         info = self.pt_times.search(line)
         if info:
             info = info.groupdict()
-            key = ':'.join([delta_info['cate'], delta_info['sub']])
+            key = ':'.join([info['cate'], info['sub']])
             res[key] = res.get(key, 0) + 1
-        info = self.pt_dream.search(line):
+        info = self.pt_dream.search(line)
         if info:
             info = info.groupdict()
             key = 'dream'
