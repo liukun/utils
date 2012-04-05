@@ -175,14 +175,22 @@ class Session(Parser):
 class Daily(Parser):
     cate = 'Daily'
     req = 'ACTIVITY'
-    pt_SimplePlayerInfo = re.compile('SimplePlayerInfo\(.* bux:(?P<bux>\d+), floorCount:(?P<floor>\d+), diamond:(?P<diamond>\d+), dreamCount:(?P<dream>\d+)')
+    pt_SimplePlayerInfo = re.compile('SimplePlayerInfo\(.* bux:(?P<bux>\d+), floorCount:(?P<floor>\d+), diamond:(?P<diamond>\d+),')
     pt_satScratchCard = 'cate:ScratchCard sub:sat'
     pt_delta = re.compile('cate:(?P<cate>\w+) sub:(?P<sub>\w+) json:\["delta","(?P<delta>-?\d+)",')
+    pt_times = re.compile('cate:(?P<cate>Floor|Gangster) sub:(?P<sub>\w+)')
+    pt_dream = re.compile('DreamJobs:(?P<dream>\d+)')
     categories = {
         'ChangeDiamond': [
             'buyDiamondsScratchCards', 'buyGoldsScratchCards',
             'restockSpeedUp', 'sellSpeedUp', 'buyGangster',
             'buyEquip', 'upgradeElevator', 'constructSpeedUp',
+            ],
+        'Floor': [
+            'built', 'construct', 'destory',
+            ],
+        'Gangster': [
+            'reside', 'evict',
             ],
         }
 
@@ -200,7 +208,7 @@ class Daily(Parser):
             if player_info:
                 player_info = player_info.groupdict()
                 res['last_player_info'] = last
-                for key in ('floor', 'bux', 'diamond', 'dream'):
+                for key in ('floor', 'bux', 'diamond'):
                     res[key] = player_info[key]
         if self.pt_satScratchCard in line:
             res['satCard'] = res.get('satCard', 0) + 1
@@ -212,6 +220,16 @@ class Daily(Parser):
             delta = int(delta_info['delta'])
             key = delta_info['cate'] + ('Plus' if delta > 0 else 'Neg')
             res[key] = res.get(key, 0) + delta
+        info = self.pt_times.search(line)
+        if info:
+            info = info.groupdict()
+            key = ':'.join([delta_info['cate'], delta_info['sub']])
+            res[key] = res.get(key, 0) + 1
+        info = self.pt_dream.search(line):
+        if info:
+            info = info.groupdict()
+            key = 'dream'
+            res[key] = res.get(key, 0) + 1
 
     def clear_data(self):
         if not getattr(self, 'data', None): return
@@ -228,7 +246,7 @@ class Daily(Parser):
             sign_up = cassa_get(self.region, player, 'SignUp', '')
             row = [player, res['last'], sign_up]
             for k in keys:
-                row.append(res.get(k, 0))
+                row.append(res.get(k, ''))
             self.csv.writerow(row)
         self.data.clear()
 
