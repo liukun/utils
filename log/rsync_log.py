@@ -57,7 +57,7 @@ def _compressed_name(origin_file_name, ip):
         return None
     assert date.startswith('20') # should be 2012, 2013, ...
     ip = 'ip-' + ip.replace('.', '-')
-    return '.'.join([parts[0], parts[1], aws_current_region, ip, 'log', 'bz2'])
+    return '.'.join([parts[0], parts[1], aws_current_region, ip, parts[2], 'bz2'])
 
 def _bzip2(source_file, target_file):
     if os.path.isfile(target_file):
