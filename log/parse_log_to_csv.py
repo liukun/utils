@@ -180,6 +180,7 @@ class Daily(Parser):
     pt_delta = re.compile('cate:(?P<cate>\w+) sub:(?P<sub>\w+) json:\["delta","(?P<delta>-?\d+)",')
     pt_times = re.compile('cate:(?P<cate>Floor|Gangster) sub:(?P<sub>\w+)')
     pt_dream = re.compile('DreamJobs:(?P<dream>\d+)')
+    pt_friends = re.compile('cate:Friend sub:status.*"FriendsNum:(?P<num>\d+)"')
     categories = {
         'ChangeDiamond': [
             'buyDiamondsScratchCards', 'buyGoldsScratchCards',
@@ -187,7 +188,7 @@ class Daily(Parser):
             'buyEquip', 'upgradeElevator', 'constructSpeedUp',
             ],
         'Floor': [
-            'built', 'construct', 'destory',
+            'built', 'construct', 'destroy',
             ],
         'Gangster': [
             'reside', 'evict',
@@ -230,12 +231,18 @@ class Daily(Parser):
             info = info.groupdict()
             key = 'dream'
             res[key] = res.get(key, 0) + 1
+        info = self.pt_friends.search(line)
+        if info:
+            info = info.groupdict()
+            key = 'friends'
+            res[key] = info['num']
 
     def clear_data(self):
         if not getattr(self, 'data', None): return
         row = ['id', 'last_time', 'sign_up_time']
         keys = ['floor', 'satCard', 'bux', 'ChangeBuxPlus', 'ChangeBuxNeg',
                 'diamond', 'ChangeDiamondPlus', 'ChangeDiamondNeg', 'dream',
+                'friends',
                 ]
         for c in self.categories:
             for k in self.categories[c]:
@@ -308,6 +315,7 @@ for root, dirs, files in os.walk(log_path):
     while files:
         f = files.pop(0)
         # f == 'activity.2012-03-26.us-east-1.ip-10-212-178-114.log.bz2'
+        if not f.startswith('activity'): continue
         parts = f.split('.')
         if parts[-1] != 'bz2': continue
         if (last_date != parts[1] or last_region != parts[2]):
