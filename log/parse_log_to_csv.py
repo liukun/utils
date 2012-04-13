@@ -15,7 +15,7 @@ lock = pid_file.pid_file(this_file+'.pid').acquire()
 assert lock
 
 # print debug info
-DEBUG = len(sys.argv) > 1 and sys.argv[1] == 'debug'
+DEBUG = 'debug' in sys.argv
 
 prefix = '/backup/tower_log_csv/tower.'
 log_path = '/backup/tower_log_backup/'
@@ -31,6 +31,10 @@ def cassa_insert_if_not_exists(region, key, column, value):
     if DEBUG: return
     key = region + key
     if family.get_count(key, columns=[column]): return
+    family.insert(key, {column: value})
+def cassa_insert(region, key, column, value):
+    if DEBUG: return
+    key = region + key
     family.insert(key, {column: value})
 def cassa_get(region, key, column, default):
     if DEBUG: return default
@@ -70,10 +74,15 @@ class Parser:
                 print ' skip', name
             return
         self.csv_name = name
+        self.load_relative(date, region)
+        if not self.csv_name: return
         self.csv_file = open(name+'.tmp', 'wb');
         self.csv = csv.writer(self.csv_file, dialect='excel')
         self.region = region
         self.prepare_data()
+
+    def load_relative(self, date, region):
+        pass
 
     def prepare_data(self):
         pass
@@ -315,7 +324,7 @@ for root, dirs, files in os.walk(log_path):
     while files:
         f = files.pop(0)
         # f == 'activity.2012-03-26.us-east-1.ip-10-212-178-114.log.bz2'
-        if not f.startswith('activity'): continue
+        if not f.startswith('activity.'): continue
         parts = f.split('.')
         if parts[-1] != 'bz2': continue
         if (last_date != parts[1] or last_region != parts[2]):
@@ -324,3 +333,69 @@ for root, dirs, files in os.walk(log_path):
             last_region = parts[2]
         batch.append(f)
     batch_process(batch, last_date, last_region)
+
+# deal with party.20xxxxxx.region.csv after generated Daily csv
+
+class Party(Parser):
+    cate = 'Party'
+
+    def load_relative(self, date, region):
+        self.merge_data = {}
+        global prefix
+        name = prefix + '.'.join(['Daily', date, region, 'csv'])
+        # 'tower.Daily.2012-04-12.us-east-1.csv'
+        if not os.path.isfile(name):
+            self.csv_name = None
+            return;
+        with open(name, 'rb') as f:
+            reader = csv.reader(f)
+            for row in reader:
+                if not row: continue
+                self.merge_data[row[0]] = row[1:]
+        self.date = date
+
+    def prepare_data(self):
+        self.csv.writerow(
+            ['date', 'id', 'found', 'reward', 'participated']
+             + self.merge_data['id'])
+
+    def parse(self, row):
+        #if self.csv is None: return
+        id_ = row[0]
+        parties = cassa_get(self.region, id_, 'Parties', '')
+        parties = set(parties.split(','))
+        participated = 0
+        # NOTE: there is ('') in set `parties`
+        for p in parties:
+            if p < self.date: participated += 1
+        parties.add(self.date)
+        cassa_insert(self.region, id_, 'Parties', ','.join(parties))
+        self.csv.writerow(
+            [self.date, id_, row[1], row[3], participated] +
+            self.merge_data.get(id_, []))
+
+    def clear_data(self):
+        self.merge_data = None
+
+party_parser = Party()
+for root, dirs, files in os.walk(log_path):
+    while dirs: dirs.pop()
+    files.sort()
+    while files:
+        f = files.pop(0)
+        # f == 'party.20120409.ap-northeast-1.ip-10-154-21-236.csv.bz2'
+        if not f.startswith('party.'): continue
+        parts = f.split('.')
+        if parts[-1] != 'bz2': continue
+        date = parts[1]
+        date = '-'.join([date[:4], date[4:6], date[6:]])
+        region = parts[2]
+        party_parser.new_csv(date, region)
+        if not party_parser.csv: continue
+        csv_file = bz2.BZ2File(os.path.join(root, f))
+        reader = csv.reader(csv_file)
+        for row in reader:
+            if row:
+                party_parser.parse(row)
+        csv_file.close();
+        party_parser.close()
