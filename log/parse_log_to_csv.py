@@ -178,7 +178,7 @@ class Daily(Parser):
     pt_SimplePlayerInfo = re.compile('SimplePlayerInfo\(.* bux:(?P<bux>\d+), floorCount:(?P<floor>\d+), diamond:(?P<diamond>\d+),')
     pt_satScratchCard = 'cate:ScratchCard sub:sat'
     pt_delta = re.compile('cate:(?P<cate>\w+) sub:(?P<sub>\w+) json:\["delta","(?P<delta>-?\d+)",')
-    pt_times = re.compile('cate:(?P<cate>Floor|Gangster) sub:(?P<sub>\w+)')
+    pt_times = re.compile('cate:(?P<cate>Floor|Gangster|Friend) sub:(?P<sub>\w+)')
     pt_dream = re.compile('DreamJobs:(?P<dream>\d+)')
     pt_friends = re.compile('cate:Friend sub:status.*"FriendsNum:(?P<num>\d+)"')
     categories = {
@@ -188,11 +188,11 @@ class Daily(Parser):
             'buyEquip', 'upgradeElevator', 'constructSpeedUp',
             ],
         'Floor': [
-            'built', 'construct', 'destroy',
-            ],
+            'built', 'construct', 'destroy'],
         'Gangster': [
-            'reside', 'evict',
-            ],
+            'reside', 'evict'],
+        'Friend': [
+            'invite', 'accept', 'refuse', 'delete'],
         }
 
     def prepare_data(self):
