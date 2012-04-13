@@ -230,7 +230,7 @@ class Daily(Parser):
         if info:
             info = info.groupdict()
             key = 'dream'
-            res[key] = res.get(key, 0) + 1
+            res[key] = info[key]
         info = self.pt_friends.search(line)
         if info:
             info = info.groupdict()
