@@ -1,10 +1,14 @@
 import bz2
 import csv
 import datetime
+import json
 import os
 import re
 import sys
 from operator import itemgetter
+
+reload(sys) 
+sys.setdefaultencoding('utf-8')
 
 # assure one instance
 this_file = sys.argv[0]
@@ -266,8 +270,22 @@ class Daily(Parser):
             self.csv.writerow(row)
         self.data.clear()
 
+class MailsToGM(Parser):
+    cate = 'MailsToGM'
+    req = 'cate:Mail sub:purge'
+    pattern = re.compile('(?P<date>.*?)\s\[INFO\].*ACTIVITY\splayer:(?P<player>34586) .* cate:Mail sub:purge json:(?P<json>\[.*\])')
+
+    def deal_data(self, res, line):
+        jsonstr = res['json']
+        purged_items = json.loads(jsonstr)[1]
+        for item in purged_items:
+            dt = datetime.datetime.fromtimestamp(int(item['date'])/1000).strftime('%Y-%m-%d %H:%M')
+            fromId = item['fromId']
+            content = item['content']
+            self.csv.writerow([dt, fromId, content])
+
 parsers = [SignUp(), IAP(), FirstPurchaseAfterIAP(),
-    ScratchCardReward(), Session(), Daily()]
+    ScratchCardReward(), Session(), Daily(), MailsToGM()]
 
 def batch_process(files, date, region):
     '''batch process one day's data'''
@@ -399,3 +417,4 @@ for root, dirs, files in os.walk(log_path):
                 party_parser.parse(row)
         csv_file.close();
         party_parser.close()
+
