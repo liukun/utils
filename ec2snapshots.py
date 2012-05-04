@@ -28,7 +28,7 @@ for arg in sys.argv:
 
 assert VOLS
 conn = boto.ec2.EC2Connection(region=boto.ec2.get_region(REGION))
-vols = conn.get_all_volumes(VOLS)
+vols = conn.get_all_volumes(list(VOLS))
 if not CRON: print 'volumes:', vols
 
 for vol in vols:
@@ -38,6 +38,7 @@ for vol in vols:
     rm = None
     log2 = math.log(2)
     for shot in snapshots:
+        # http://stackoverflow.com/questions/127803/how-to-parse-iso-formatted-date-in-python
         start_time = datetime.datetime(*map(int, re.split('[^\d]', shot.start_time)[:6]))
         passed = datetime.datetime.utcnow() - start_time
         hours = passed.days * 24 + passed.seconds / 3600
