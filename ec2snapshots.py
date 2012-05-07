@@ -53,7 +53,7 @@ for vol in vols:
         vol.create_snapshot()
         had.add(0)
         if not CRON: print 'created a snapshot'
-    if rm and len(had) > KEEP_SNAPSHOTS:
+    if rm and len(snapshots) > KEEP_SNAPSHOTS:
         rm.delete()
         if not CRON: print 'deleted', rm
 
