@@ -51,7 +51,7 @@ def cassa_get(region, key, column, default):
 class Parser:
     cate = ''
     req = ''
-    pattern = re.compile("(?P<date>.*?)\s\[INFO\].*ACTIVITY\splayer:(?P<player>[0-9]+?)\s")
+    pattern = re.compile("(?P<date>.*?)\s\[(INFO|WARN)\].*ACTIVITY\splayer:(?P<player>[0-9]+?)\s")
     csv = None
     csv_file = None
     csv_name = None
@@ -115,7 +115,7 @@ class SignUp(Parser):
 class IAP(Parser):
     cate = 'IAP'
     req = 'cate:InAppPurchase sub:correct'
-    pattern = re.compile('(?P<date>.*?)\s\[INFO\].*ACTIVITY\splayer:(?P<player>[0-9]+?)\s.*cate:InAppPurchase sub:correct.*"diamond",(?P<value>[0-9]+?),')
+    pattern = re.compile('(?P<date>.*?)\s\[(INFO|WARN)\].*ACTIVITY\splayer:(?P<player>[0-9]+?)\s.*cate:InAppPurchase sub:correct.*"diamond",(?P<value>[0-9]+?),')
 
     def deal_data(self, res, line):
         date = res['date']
@@ -147,7 +147,7 @@ class FirstPurchaseAfterIAP(Parser):
 class ScratchCardReward(Parser):
     cate = 'ScratchCardReward'
     req = 'sub:scratchCard'
-    pattern = re.compile('(?P<date>.*?)\s\[INFO\].*ACTIVITY\splayer:(?P<player>[0-9]+?)\s.*cate:Change(?P<type>.*) sub:scratchCard.*"delta","(?P<value>[0-9]+?)",')
+    pattern = re.compile('(?P<date>.*?)\s\[(INFO|WARN)\].*ACTIVITY\splayer:(?P<player>[0-9]+?)\s.*cate:Change(?P<type>.*) sub:scratchCard.*"delta","(?P<value>[0-9]+?)",')
 
     def deal_data(self, res, line):
         self.csv.writerow([res['date'], res['player'], res['type'], res['value']])
@@ -155,7 +155,7 @@ class ScratchCardReward(Parser):
 class Session(Parser):
     cate = 'Session'
     req = 'cate:Sign'
-    pattern = re.compile('(?P<date>.*?)\s\[INFO\].*ACTIVITY\splayer:(?P<player>\d+?) .* session:(?P<session>\d+) .* cate:Sign(?P<method>\w+) ')
+    pattern = re.compile('(?P<date>.*?)\s\[(INFO|WARN)\].*ACTIVITY\splayer:(?P<player>\d+?) .* session:(?P<session>\d+) .* cate:Sign(?P<method>\w+) ')
 
     def prepare_data(self):
         self.cache = {}
@@ -273,7 +273,7 @@ class Daily(Parser):
 class MailsToGM(Parser):
     cate = 'MailsToGM'
     req = 'cate:Mail sub:purge'
-    pattern = re.compile('(?P<date>.*?)\s\[INFO\].*ACTIVITY\splayer:(?P<player>34586) .* cate:Mail sub:purge json:(?P<json>\[.*\])')
+    pattern = re.compile('(?P<date>.*?)\s\[(INFO|WARN)\].*ACTIVITY\splayer:(?P<player>34586) .* cate:Mail sub:purge json:(?P<json>\[.*\])')
 
     def deal_data(self, res, line):
         jsonstr = res['json']
