@@ -281,11 +281,25 @@ class MailsToGM(Parser):
         for item in purged_items:
             dt = datetime.datetime.fromtimestamp(int(item['date'])/1000).strftime('%Y-%m-%d %H:%M')
             fromId = item['fromId']
+            fromName = item['fromName']
             content = item['content']
-            self.csv.writerow([dt, fromId, content])
+            self.csv.writerow([dt, fromId, fromName, content])
+
+class MailsToGM2(Parser):
+    cate = 'MailsToGM2'
+    req = 'cate:Mail sub:new'
+    pattern = re.compile('(?P<date>.*?)\s\[(INFO|WARN)\].*ACTIVITY\splayer:(?P<player>[0-9]+?) .* cate:Mail sub:new .*"toId":34586.*"content":"(?P<content>.*)".*"fromName":"(?P<fromName>.*)"')
+
+    def deal_data(self, res, line):
+        dt = res['date']
+        fromId = res['player']
+        fromName = res['fromName']
+        content = res['content']
+        self.csv.writerow([dt, fromId, fromName, content])
 
 parsers = [SignUp(), IAP(), FirstPurchaseAfterIAP(),
-    ScratchCardReward(), Session(), Daily(), MailsToGM()]
+    ScratchCardReward(), Session(), Daily(), MailsToGM(), MailsToGM2()]
+
 
 def batch_process(files, date, region):
     '''batch process one day's data'''
